@@ -6,13 +6,11 @@ app = Flask(__name__)
 CORS(app)
 ctr = 0
 # Serve React App
-@app.route('/api')
-def api():
-    global ctr
-    ctr += 1
-    print(ctr)
-    return str(ctr)
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def api(path):
+    return path
 
 
 if __name__ == '__main__':
-    app.run(use_reloader=True, port=5000, threaded=True)
+    app.run()
