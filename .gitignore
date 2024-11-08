@@ -1,2 +1,5 @@
+./server/modelka/train_dataset_vprod_encr_train 2
+*.mp4
+*.zip
 dbdata/
 __pycache__/
