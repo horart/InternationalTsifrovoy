@@ -1,9 +1,30 @@
 version: '3'
 services:
   app:
+    container_name: frontend
     stdin_open: true
     build:
       context: "./app"
       dockerfile: Dockerfile
     ports:
       - "8080:80"
+  database:
+    image: mysql:8
+    restart: always
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: toor
+    volumes:
+      - ./dbdata:/var/lib/mysql/
+
+  phpmyadmin:
+    depends_on:
+      - database
+    image: phpmyadmin
+    restart: always
+    ports:
+      - "8090:80"
+    environment:
+      PMA_HOST: database
+      MYSQL_ROOT_PASSWORD: toor

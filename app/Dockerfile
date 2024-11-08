@@ -1,4 +1,4 @@
-FROM node:12-alpine as build
+FROM node:12-alpine AS build
 WORKDIR /app
 COPY package.json /app/package.json
 RUN npm install --only=prod
