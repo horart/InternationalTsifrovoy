@@ -1,0 +1,1 @@
+server/Flichendery/model/models--utrobinmv--t5_summary_en_ru_zh_base_2048/snapshots/b15d6a01373b415ceba684286fbdcc3cbaa734fc/model.safetensors filter=lfs diff=lfs merge=lfs -text
