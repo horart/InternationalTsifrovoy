@@ -1,0 +1,14 @@
+# NLP
+nltk >= 3.4
+razdel >= 0.4.0
+sentencepiece >= 0.1.85
+git+https://github.com/IlyaGusev/rouge.git@84f2530
+bert-score == 0.3.13
+
+# AllenNLP
+allennlp >=2.7.0,<3.0
+allennlp-models >=2.7.0,<3.0
+
+# Other
+beautifulsoup4 >= 4.9.0
+flask >= 1.1.1
