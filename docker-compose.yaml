@@ -34,5 +34,7 @@ services:
     build:
       context: "./server"
       dockerfile: Dockerfile
+    environment:
+      - HR_SERVER_CONNECTION_STRING=mysql+pymysql://root:toor@database/app
     ports:
       - "7000:8888"
