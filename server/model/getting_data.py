@@ -1,8 +1,7 @@
 import os
 from annotation import get_goal_emotions
 import pickle
-#from process_video import get_emotions
-from process_video_better import VideoProcessor
+from process_video import VideoProcessor
 #OCEAN -> NEO BIg Five
 
 
