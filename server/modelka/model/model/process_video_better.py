@@ -26,7 +26,7 @@ class VideoProcessor:
         return captured_emotions[0]['emotions']
 
     def __get_raw_emotions(self): ...
-    def get_emotions(self) -> list:
+    def get_emotions(self):
         # Все полученные веса будем суммировать в weights
         weights = {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0,
                    'sad': 0, 'surprise': 0, 'neutral': 0}
