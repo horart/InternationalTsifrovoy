@@ -44,7 +44,7 @@ class Vid2Traits:
 
 if __name__ == "__main__":
     modelechka = Vid2Traits(weight_file=r"source/weights.pkl")
-    path_to_folder = r"data/train/train_data"
-    path_to_annotation = r"data/train/annotation/annotation_training.pkl"
+    path_to_folder = r"data/train"
+    path_to_annotation = r"data/annotation_training.pkl"
     modelechka.train_many(path_to_folder, path_to_annotation)
     print(modelechka.score_many(path_to_folder, path_to_annotation))

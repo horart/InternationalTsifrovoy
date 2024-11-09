@@ -1,0 +1,9 @@
+numpy
+moviepy
+fer
+scikit-learn
+opencv-python
+tensorflow
+flask
+flask-cors
+gunicorn
