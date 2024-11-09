@@ -1,38 +1,50 @@
+import os
+
 from sklearn.neural_network import MLPRegressor
-from getting_data import *
+from source.getting_data import *
 import pickle
 import time
+
+
 class Vid2Traits:
-    def __init__(self, weight_file, params=1):
-        self.neural_network = MLPRegressor(max_iter=200, validation_fraction=0.3)
+    def __init__(self, weight_file):
         self.weight_file = weight_file
-
         try:
-            with open(self.weight_file, "rb")as file:
-                self.neural_network.coefs_ = pickle.load(file)
-        except: ...
+            with open(self.weight_file, "rb") as file:
+                self.neural_network = pickle.load(file)
+        except:
+            self.neural_network = MLPRegressor(max_iter=200, validation_fraction=0.3)
 
-    def calculate(self, video_file: str) -> dict:
-        ...
+    def predict(self, data: str) -> list:
+        return self.neural_network.predict(data)
 
-    def train(self, first, second): # -> dict
+    def score_many(self, path_to_folder: str, path_to_annotation: str) -> float:
+        folders = os.listdir(path_to_folder)
+        count, score = len(folders), 0
+        for i in range(1):
+            path_to_videos = path_to_folder + '/' + folders[i]
+            fer_results, expected_results = get_data(get_files(path_to_annotation, path_to_videos, 3))
+            score += self.neural_network.score(fer_results, expected_results)
+        return score / count
+
+    def train(self, first, second):  # -> dict
         self.neural_network.fit(first, second)
-
         with open(self.weight_file, "wb") as file:
-            pickle.dump(self.neural_network.coefs_, file)
+            pickle.dump(self.neural_network, file)
 
 
+    def train_many(self, path_to_folder: str, path_to_annotation: str):
+        folders = os.listdir(path_to_folder)
+        for i in range(1, 3):
+            path_to_videos = path_to_folder + '/' + folders[i]
+            fer_results, expected_results = get_data(get_files(path_to_annotation, path_to_videos, 3))
+            #print(fer_results)
+            self.train(fer_results, expected_results)
 
 
 if __name__ == "__main__":
-    modelechka = Vid2Traits(weight_file="weights.pkl")
-    path_to_videos = r"C:\Users\ADM\Documents\learning\Projects\InternationalTsifrovoy\server\modelka\train_dataset_vprod_encr_train\train\train_data\training80_01"
-    path_to_annotation = r"C:\Users\ADM\Documents\learning\Projects\InternationalTsifrovoy\server\modelka\train_dataset_vprod_encr_train\train\annotation\annotation_training.pkl"
-    number_of_videos = 5
-    start = time.time()
-    fer_results, expected_results = get_data(get_files(path_to_annotation, path_to_videos, number_of_videos))
-    modelechka.train(fer_results, expected_results)
-    print(time.time() - start)
-
-
-
+    modelechka = Vid2Traits(weight_file=r"source/weights.pkl")
+    path_to_folder = r"data/train/train_data"
+    path_to_annotation = r"data/train/annotation/annotation_training.pkl"
+    modelechka.train_many(path_to_folder, path_to_annotation)
+    print(modelechka.score_many(path_to_folder, path_to_annotation))
