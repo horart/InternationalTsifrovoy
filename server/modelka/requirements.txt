@@ -3,7 +3,7 @@ moviepy
 fer
 scikit-learn
 opencv-python
-tensorflow
+tensorflow[and-cuda]
 flask
 flask-cors
 gunicorn
