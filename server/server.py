@@ -1,3 +1,4 @@
+import multiprocessing.pool
 import os
 from uuid import uuid4
 from flask import Flask, jsonify, request, Response
@@ -9,11 +10,30 @@ import datetime
 import bcrypt
 import json
 from werkzeug.datastructures.file_storage import FileStorage
+from auth import to_login_cache
+from logics import Model
+import multiprocessing
 
-
+cached = {
+    'logins': {},
+    'users': {},
+}
 
 app = Flask(__name__)
 CORS(app)
+
+model = Model({
+        'ocean': {
+            'extraversion': 0.,
+            'neuroticism': 0.2,
+            'agreeableness': 0.4,
+            'conscientiousness': 0.6,
+            'openness': 0.8,
+            'interview': 1.0,
+        }
+        
+    }
+)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('HR_SERVER_CONNECTION_STRING') or 'mysql+pymysql://root:toor@localhost/app'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -54,6 +74,7 @@ class Submission(db.Model):
         self.user_id = user_id
         self.video_id = video_id
         self.status = 0
+        model.calculate(video_id)
 
 
 class SubmissionSchema(ma.Schema):
@@ -64,6 +85,26 @@ user_schema = UserSchema()
 users_schema = UserSchema(many=True)
 submission_schema = SubmissionSchema()
 submissions_schema = SubmissionSchema(many=True)
+
+def get_user_id(auth, db, cached):
+    if not auth or auth.type != 'basic':
+        return False
+    login = auth['username']
+    password = auth['password']
+    if cached['logins'][login]:
+        if not bcrypt.checkpw(password.encode(), cached['logins'][login]['password_hash'].encode()):
+            return False
+        return cached['logins'][login]['user_id']
+    lp = db.session.query(User).filter_by(login=login)
+    if not lp.all():
+        return False
+    r = lp.first()
+    cached['logins'][login] = to_login_cache(r.password_hash, r.id)
+    if bcrypt.checkpw(password.encode(), r.password_hash.encode()):
+        return r.id
+    else:
+        return False
+
 
 @app.route('/get',methods=['GET'])
 def get_users():
@@ -78,19 +119,21 @@ def create_user():
         user = User(request.json['login'], request.json['name'], request.json['password'])
         db.session.add(user)
         db.session.commit()
-        return user_schema.jsonify(user)
+        cached['logins'][request.json['login']] = to_login_cache(user.password_hash, user.id)
+        return user_schema.jsonify(user), 201
     except Exception as e:
         return jsonify({'error': str(e)}), 409
 
 @app.route('/submission/create', methods=['PUT'])
 def create_submission():
-    # AUTH
+    uid = get_user_id(request.authorization)
+    if not uid:
+        return jsonify({'error': 'Not authorized'}, 401)
     try:
-        js = json.loads(request.form['json'])
-        sub = Submission(js['user_id'], request.files['video'])
+        sub = Submission(uid, request.files['video'])
         db.session.add(sub)
         db.session.commit()
-        return submission_schema.jsonify(sub)
+        return submission_schema.jsonify(sub), 201
     
     except Exception as e:
         return jsonify({'error': str(e)}), 409
