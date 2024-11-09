@@ -139,7 +139,25 @@ def create_submission():
     except Exception as e:
         return jsonify({'error': str(e)}), 409
     
+# Новый маршрут для получения всех отправок
+@app.route('/submissions', methods=['GET'])
+def get_all_submissions():
+    try:
+        all_submissions = Submission.query.all()
+        result = submissions_schema.dump(all_submissions)
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
+# Новый маршрут для получения отправок конкретного пользователя
+@app.route('/user/<int:userid>/submissions', methods=['GET'])
+def get_user_submissions(userid):
+    try:
+        user_submissions = Submission.query.filter_by(user_id=userid).all()
+        result = submissions_schema.dump(user_submissions)
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
