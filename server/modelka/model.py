@@ -4,6 +4,7 @@ from sklearn.neural_network import MLPRegressor
 from source.getting_data import *
 import pickle
 import time
+import config
 
 
 class Vid2Traits:
@@ -43,8 +44,8 @@ class Vid2Traits:
 
 
 if __name__ == "__main__":
-    modelechka = Vid2Traits(weight_file=r"source/weights.pkl")
-    path_to_folder = r"data/train"
-    path_to_annotation = r"data/annotation_training.pkl"
+    modelechka = Vid2Traits(weight_file=config.WEIGHT_PATH)
+    path_to_folder = config.FOLDER_PATH
+    path_to_annotation = config.ANNOTATION_PATH
     modelechka.train_many(path_to_folder, path_to_annotation)
     print(modelechka.score_many(path_to_folder, path_to_annotation))
