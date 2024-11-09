@@ -56,6 +56,7 @@ class UserSchema(ma.Schema):
     class Meta:
         fields = ('id', 'name', 'login')
 
+#submission -> поменять статус, 200
 class Submission(db.Model):
     __tablename__ = 'submissions'
     id = db.Column(db.Integer,primary_key=True)
@@ -64,6 +65,7 @@ class Submission(db.Model):
     result = db.Column(db.JSON, nullable=True)
     status = db.Column(db.Integer)
     submitted_at = db.Column(db.DateTime, default=datetime.datetime.now)
+
     def __init__(self, user_id, video: FileStorage):
         if video.filename != '':
             video_id = uuid4(video.filename).hex
@@ -71,9 +73,27 @@ class Submission(db.Model):
         self.user_id = user_id
         self.video_id = video_id
         self.status = 0
-        proc = Process()
-        model.calculate(video_id)
+        proc = Process(target=Submission.multiprocessor_calculation(self.id), args=(video_id, ))
+        proc.start()
 
+    @staticmethod
+    def multiprocessor_calculation(submission_id):
+        with app.app_context():
+            submission = Submission.query.get(submission_id)
+            if not submission:
+                return
+
+            submission.update_status(0) # В обработке
+            try:
+                res = model.calculate(submission.video_id)
+                submission.result = res
+                submission.update_status(2) # Успешно
+            except Exception as e:
+                submission.update_status(2) # Возникла ошибка
+
+    def update_status(self, status):
+        self.status = status
+        db.session.commit()
 
 class SubmissionSchema(ma.Schema):
     class Meta:
