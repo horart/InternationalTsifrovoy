@@ -1,4 +1,4 @@
-import multiprocessing.pool
+from multiprocessing import Process
 import os
 from uuid import uuid4
 from flask import Flask, jsonify, request, Response
@@ -8,11 +8,9 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 import datetime
 import bcrypt
-import json
 from werkzeug.datastructures.file_storage import FileStorage
 from auth import to_login_cache
 from logics import Model
-import multiprocessing
 
 cached = {
     'logins': {},
@@ -31,7 +29,6 @@ model = Model({
             'openness': 0.8,
             'interview': 1.0,
         }
-        
     }
 )
 
@@ -74,6 +71,7 @@ class Submission(db.Model):
         self.user_id = user_id
         self.video_id = video_id
         self.status = 0
+        proc = Process()
         model.calculate(video_id)
 
 
@@ -104,6 +102,9 @@ def get_user_id(auth, db, cached):
         return r.id
     else:
         return False
+
+def process_video(video):
+    Model(video)
 
 
 @app.route('/get',methods=['GET'])
@@ -137,6 +138,8 @@ def create_submission():
     
     except Exception as e:
         return jsonify({'error': str(e)}), 409
+    
+
 
 if __name__ == '__main__':
     app.run(debug=True)
