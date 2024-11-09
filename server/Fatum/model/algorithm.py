@@ -1,71 +1,108 @@
-import sys
-from model import Vid2Traits
-from process_video_better import VideoProcessor
+# Импортируем необходимые библиотеки
+import numpy as np
+import pandas as pd
+from openpyxl import Workbook
+from openpyxl.utils.dataframe import dataframe_to_rows
+from openpyxl.styles import PatternFill
 
-class ConvertFromOceanToMbti:
-    def __init__(self, openness, conscientiousness, extraversion, agreeableness, neuroticism):
-        # Инициализация типов личности из OCEAN
-        self.openness = openness
-        self.conscientiousness = conscientiousness
-        self.extraversion = extraversion
-        self.agreeableness = agreeableness
-        self.neuroticism = neuroticism
+# Генератор входных значений OCEAN (от 0 до 1)
+def generate_ocean_values(num_samples):
+    for _ in range(num_samples):
+        yield {
+            'openness': np.round(np.random.uniform(0, 1), 6),
+            'conscientiousness': np.round(np.random.uniform(0, 1), 6),
+            'extraversion': np.round(np.random.uniform(0, 1), 6),
+            'agreeableness': np.round(np.random.uniform(0, 1), 6),
+            'neuroticism': np.round(np.random.uniform(0, 1), 6)
+        }
 
-    def big_five_to_mbti(self):
-        # Функция для расчета MBTI на основе шкалы OCEAN с учетом описанных групп
-        EI_score = self.extraversion - 0.5 * self.agreeableness
-        SN_score = self.openness - 0.6 * self.conscientiousness
-        TF_score = self.agreeableness - 0.4 * self.neuroticism
-        JP_score = self.conscientiousness - 0.4 * self.openness
-
-        # Рассчитываем шкалы для MBTI на основе характеристик OCEAN
-        E_I = 'E' if EI_score >= 0.2 else 'I'
-        S_N = 'S' if SN_score <= 0.65 else 'N'
-        T_F = 'F' if TF_score > 0.35 else 'T'
-        J_P = 'P' if JP_score <= 0.5 else 'J'
-
-        # Определение типа MBTI на основе значений
-        mbti_type = E_I + S_N + T_F + J_P
-        return mbti_type
-
-def main():
-    # Path to the video file you want to process
-    video_file_path = r"C:\Файлы\Meznar-hakaton\video-test\_uNup91ZYw0.002.mp4"
+# Функция для расчета MBTI шкал на основе коэффициентов для каждой составляющей
+def calculate_mbti_scales(ocean_values):
+    openness = ocean_values['openness']
+    conscientiousness = ocean_values['conscientiousness']
+    extraversion = ocean_values['extraversion']
+    agreeableness = ocean_values['agreeableness']
+    neuroticism = ocean_values['neuroticism']
     
-    # Initialize Vid2Traits object to extract personality traits from the video
-    model = Vid2Traits(weight_file=r"weights.pkl")
-    video_processor = VideoProcessor(video_file_path)
+    # (a) MBTI_EI
+    EI = (-0.01 * neuroticism) + (0.16 * extraversion) + (0.00 * openness) + (0.02 * agreeableness) + (-0.01 * conscientiousness)
     
-    # Use getVideo method to get the prediction
-    try:
-        prediction = model.getVideo(video_processor)
-        print("Predicted Traits from Video:", prediction)
-    except ValueError as e:
-        print(f"Error while processing video: {e}")
-        sys.exit(1)
+    # (b) MBTI_SN
+    SN = (-0.02 * neuroticism) + (-0.01 * extraversion) + (-0.03 * openness) + (0.05 * agreeableness) + (-0.05 * conscientiousness)
     
-    # If you want to extract OCEAN values, you can use the same logic from earlier
-    emotions = video_processor.get_emotions()
-    if emotions is None or len(emotions) == 0:
-        print("Error: No emotions data found.")
-        sys.exit(1)
+    # (c) MBTI_TF
+    TF = (-0.12 * neuroticism) + (-0.04 * extraversion) + (-0.08 * openness) + (-0.39 * agreeableness) + (0.17 * conscientiousness)
     
-    # Assuming emotions order is [extraversion, neuroticism, agreeableness, conscientiousness, openness]
-    extraversion, neuroticism, agreeableness, conscientiousness, openness = emotions[:5]
-    print(extraversion, neuroticism, agreeableness, conscientiousness, openness)
+    # (d) MBTI_JP
+    JP = (0.04 * neuroticism) + (-0.02 * extraversion) + (-0.11 * openness) + (0.03 * agreeableness) + (0.13 * conscientiousness)
     
-    # Convert OCEAN values to MBTI
-    converter = ConvertFromOceanToMbti(
-        openness=openness,
-        conscientiousness=conscientiousness,
-        extraversion=extraversion,
-        agreeableness=agreeableness,
-        neuroticism=neuroticism
-    )
+    return round(EI, 3), round(SN, 3), round(TF, 3), round(JP, 3)
 
-    # Get MBTI type from OCEAN traits
-    mbti_type = converter.big_five_to_mbti()
-    print(f"Predicted MBTI Type: {mbti_type}")
+# Функция для определения типа MBTI на основе полученных шкал
+def mbti_type(EI, SN, TF, JP):
+    ei_type = 'E' if EI >= 0.08 else 'I'
+    sn_type = 'S' if SN >= -0.03 else 'N'
+    tf_type = 'T' if TF >= -0.23 else 'F'
+    jp_type = 'J' if JP >= 0.04 else 'P'
+    return ei_type + sn_type + tf_type + jp_type
 
-if __name__ == "__main__":
-    main()
+# Списки для хранения значений EI, SN, TF, JP и подготовка данных для записи в Excel
+data = []
+num_samples = 500000  # Количество значений для генерации
+
+# Генерация и сбор данных в список для каждой строки
+for ocean_values in generate_ocean_values(num_samples):
+    EI, SN, TF, JP = calculate_mbti_scales(ocean_values)
+    mbti = mbti_type(EI, SN, TF, JP)
+    
+    # Добавляем строку в данные
+    data.append({
+        "openness": ocean_values['openness'],
+        "conscientiousness": ocean_values['conscientiousness'],
+        "extraversion": ocean_values['extraversion'],
+        "agreeableness": ocean_values['agreeableness'],
+        "neuroticism": ocean_values['neuroticism'],
+        "EI": EI,
+        "SN": SN,
+        "TF": TF,
+        "JP": JP,
+        "MBTI Type": mbti
+    })
+
+# Создаем DataFrame
+df = pd.DataFrame(data)
+
+# Вычисление среднего значения для каждого показателя
+average_EI = round(df["EI"].mean(), 3)
+average_SN = round(df["SN"].mean(), 3)
+average_TF = round(df["TF"].mean(), 3)
+average_JP = round(df["JP"].mean(), 3)
+
+# Создаем новый Excel файл
+wb = Workbook()
+ws = wb.active
+
+# ЗЗаписываем данные, оставляя строку
+for row in dataframe_to_rows(df, index=False, header=True):
+    ws.append(row)
+
+# Оставляем строку пустой
+ws.append([""] * len(df.columns))
+
+# Добавляем строку со средними значениями и выделяем её зелёным цветом
+average_row = ["Average ", "", "", "", "", average_EI, average_SN, average_TF, average_JP, ""]
+ws.append(average_row)
+
+# Задаем зелёную заливку
+green_fill = PatternFill(start_color="B7DA92", end_color="B7DA92", fill_type="solid")
+for cell in ws[ws.max_row]:  # ws.max_row указывает на последний ряд
+    cell.fill = green_fill
+
+# Устанавливаем ширину всех столбцов на 18 пикселей (около 3,5 см)
+for col in ws.columns:
+    max_length = 18
+    ws.column_dimensions[col[0].column_letter].width = max_length
+
+# Сохраняем Excel файл
+wb.save("MBTI_Report.xlsx")
+print("Отчёт успешно сохранен в файл MBTI_Report.xlsx")
