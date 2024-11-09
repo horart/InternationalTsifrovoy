@@ -32,24 +32,27 @@ class Vid2Traits:
         big_expected_results = []
         big_input = []
         for i in range(start, start + count):
+            start = time.time()
             path_to_videos = path_to_folder + '/' + folders[i]
             fer_results, expected_results = get_data(get_files(path_to_annotation, path_to_videos, limit))
             big_expected_results += expected_results
             big_input += fer_results
+            print(i + 1, time.time() - start)
         self.train(big_input, big_expected_results)
 
 
     def score_many(self, path_to_folder: str, path_to_annotation: str, count=None, start=0, limit=-1) -> float:
         folders = os.listdir(path_to_folder)
         count = len(folders) if count is None else count
-        score = 0
         big_input = []
         big_output = []
         for i in range(start, start + count):
+            start = time.time()
             path_to_videos = path_to_folder + '/' + folders[i]
             fer_results, expected_results = get_data(get_files(path_to_annotation, path_to_videos, limit))
             big_input += fer_results
             big_output += expected_results
+            print(i + 1, time.time() - start)
         return self.neural_network.score(big_input, big_output)
 
 
@@ -58,5 +61,7 @@ if __name__ == "__main__":
     modelechka = Vid2Traits(weight_file=config.WEIGHT_PATH)
     path_to_folder = config.FOLDER_PATH
     path_to_annotation = config.ANNOTATION_PATH
-    modelechka.train_many(path_to_folder, path_to_annotation, count=2, start=0, limit=3)
-    print(modelechka.score_many(path_to_folder, path_to_annotation, count=2, start=2, limit=3))
+    start = time.time()
+    modelechka.train_many(path_to_folder, path_to_annotation, count=1, start=0, limit=5)
+    print(modelechka.score_many(path_to_folder, path_to_annotation, count=1, start=1, limit=5))
+    print(time.time() - start) # 61 -> 39

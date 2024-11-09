@@ -9,6 +9,8 @@ import cv2
 NUMBER_OF_FRAMES = 10
 TRIVIAL_EMOTION_WEIGHTS = {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0,
                    'sad': 0, 'surprise': 0, 'neutral': 0}
+emotions_detector = FER(mtcnn=True)
+
 # Создаём класс для обработки видео
 class VideoProcessor:
     def __init__(self, path: str, number_of_frames=NUMBER_OF_FRAMES):
@@ -17,12 +19,10 @@ class VideoProcessor:
         self.video_clip = VideoFileClip(path) # Запись видео
         self.video_name = os.path.splitext(self.path)[0] # Имя видео
         self.step = self.video_clip.duration / self.number_of_frames # Шаг, с которым мы будем проходиться по видеоклипу
-
     # Метод для получения эмоции с одного изображения
-    @staticmethod
-    def get_emotion_from_frame(path_to_jpg: str) -> dict:
+
+    def get_emotion_from_frame(self, path_to_jpg: str) -> dict:
         jpg = cv2.imread(path_to_jpg)
-        emotions_detector = FER(mtcnn=True)
         captured_emotions = emotions_detector.detect_emotions(jpg)
         return captured_emotions[0]['emotions'] if captured_emotions else {k: 0.5 for k in TRIVIAL_EMOTION_WEIGHTS}
 
@@ -35,11 +35,11 @@ class VideoProcessor:
         #os.mkdir('tmp')
 
         for current_duration in np.arange(0, self.video_clip.duration, self.step):
-            frame_filename = hashlib.md5(bytes(current_duration)).hexdigest()
+            frame_filename = hashlib.md5(bytes(current_duration) + hashed_name.encode()).hexdigest()
             frame_filename = os.path.join('tmp', frame_filename + ".jpg")
             self.video_clip.save_frame(frame_filename, current_duration)
             try:
-                emotions_from_frame = (VideoProcessor.get_emotion_from_frame(frame_filename))
+                emotions_from_frame = (self.get_emotion_from_frame(frame_filename))
                 for emotion in emotions_from_frame:
                     weights[emotion] += emotions_from_frame[emotion]
             except:
