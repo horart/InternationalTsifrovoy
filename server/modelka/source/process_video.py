@@ -7,7 +7,8 @@ import cv2
 
 # Определяет, сколько кадров из видеовизитки мы возьмём
 NUMBER_OF_FRAMES = 10
-
+TRIVIAL_EMOTION_WEIGHTS = {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0,
+                   'sad': 0, 'surprise': 0, 'neutral': 0}
 # Создаём класс для обработки видео
 class VideoProcessor:
     def __init__(self, path: str, number_of_frames=NUMBER_OF_FRAMES):
@@ -23,13 +24,12 @@ class VideoProcessor:
         jpg = cv2.imread(path_to_jpg)
         emotions_detector = FER(mtcnn=True)
         captured_emotions = emotions_detector.detect_emotions(jpg)
-        return captured_emotions[0]['emotions']
+        return captured_emotions[0]['emotions'] if captured_emotions else {k: 0.5 for k in TRIVIAL_EMOTION_WEIGHTS}
 
-    def __get_raw_emotions(self): ...
+    
     def get_emotions(self) -> list:
         # Все полученные веса будем суммировать в weights
-        weights = {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0,
-                   'sad': 0, 'surprise': 0, 'neutral': 0}
+        weights = {k: v for k, v in TRIVIAL_EMOTION_WEIGHTS.items()}
         # Хэшируем имя видеоролика, чтобы не возникало ошибок кодировки при создании папки и изображений
         hashed_name = hashlib.md5(self.video_name.encode()).hexdigest()
         #os.mkdir('tmp')
@@ -46,5 +46,5 @@ class VideoProcessor:
                 pass
             os.remove(frame_filename)
         #os.removedirs('tmp')
-        return [weights['angry'], weights['disgust'], weights['fear'],
-                weights['happy'], weights['sad'], weights['surprise'], weights['neutral']]
+        return [weights['angry']/10, weights['disgust']/10, weights['fear']/10,
+                weights['happy']/10, weights['sad']/10, weights['surprise']/10, weights['neutral']/10]

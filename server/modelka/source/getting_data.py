@@ -30,8 +30,8 @@ def get_data(files: dict):
     output = []
     for path, exp in files.items():
         video = VideoProcessor(path)
-        inp.append(video.get_emotions())
-        #inp.append(get_emotions(path))
+        emotions = video.get_emotions()
+        inp.append(emotions)
         output.append(exp)
     return inp, output
 
