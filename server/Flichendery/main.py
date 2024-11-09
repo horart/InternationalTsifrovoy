@@ -108,5 +108,5 @@ def process_video_and_generate_summary(video_path):
     print("Big Summary:", summaries["big_summary"])
 
 # Пример вызова
-video_file_path = "path_to_your_video.mp4"
+video_file_path = r"video-test\_uNup91ZYw0.002.mp4"
 process_video_and_generate_summary(video_file_path)
